@@ -142,3 +142,38 @@ python3 scripts/package.py
 
 - **パターン C — PPA 改善・デバッグの反復**:
   > `output/reports/summary.json` を確認し、クリティカルパスをパイプライン化して Fmax を 20 MHz 以上（またはセル数を目標値以下）に改善したうえで、再度全ゲート PASS させてください。
+
+### 3.3 Sign-off と MPW 提出手順
+
+仕様書（`docs/design-spec.md`）・参考資料（`reference/`）および RTL・制約・テストベンチが整ったら、以下の手順で Sign-off と提出パッケージ生成を行います。
+
+1. **Sign-off パイプラインを実行する**（環境に応じて 3 通り）:
+   - **ローカル実行（または Gemini からの自動実行）**:
+     ```bash
+     bash flow/run_all.sh
+     ```
+   - **Docker コンテナ実行（`OpenSUSI-EDA-Container`：ローカル EDA 構築不要・本番同一環境）**:
+     ```bash
+     docker run --rm --platform linux/amd64 -v "$PWD:/work" opensusi-eda:v0.1.0 bash flow/run_all.sh
+     ```
+   - **GitHub push → GitHub Actions / GCP Cloud Batch 実行**:
+     ```bash
+     git add design.yaml docs/design-spec.md reference/ rtl/ constraints/ verification/
+     git commit -m "feat: implement design and constraints"
+     git push origin main
+     ```
+     Push で [`.github/workflows/design-ci.yml`](.github/workflows/design-ci.yml) が自動実行されます。GCP Cloud Batch 上でフル Sign-off を回す場合は、`workflow_dispatch` で `execution_backend: gcp-batch` を選択（または `design.yaml` で `gcp.enabled: true` を設定）してください。
+
+2. **Sign-off 結果を確認する（`output/reports/summary.json`）**:
+   ```bash
+   cat output/reports/summary.json
+   ```
+   以下を確認します:
+   - `"overall_status": "PASS"` であること
+   - `checks` の全 10 ゲート（`rtl_sim`, `synth`, `gl_sim`, `floorplan`, `route`, `precheck`, `drc`, `lvs`, `mdp_ip62`, `sta`）がすべて `"PASS"` であること
+   - `openroad_drc == 0`, `klayout_drc_errors == 0`, `lvs_match == true`, `ip62_drc_errors == 0`, `sta_wns_ns >= 0.0` であること
+   - NG がある場合は `output/logs/*.log` や `output/reports/{drc.lyrdb,lvs.lvsdb,sta.rpt}` を確認し、修正して手順 1 を再実行します。
+
+3. **最終確認と MPW 提出**:
+   - 必要に応じて KLayout GUI で `output/gds/<top_cell>.gds` を目視確認します。
+   - 生成された `output/package/<top_cell>_mpw_bundle.tar.gz`（SHA-256 チェックサムは `output/package/manifest.json` に記録）を OpenSUSI MPW Submission Gateway へ提出します。

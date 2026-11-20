@@ -139,3 +139,37 @@ Because Gemini / Antigravity automatically loads [`AGENTS.md`](AGENTS.md) and [`
 
 - **Pattern C — Iterative PPA Optimization & Debugging**:
   > Inspect `output/reports/summary.json`, pipeline the critical path to improve estimated Fmax above 20 MHz (or reduce cell count below target), and verify that all sign-off gates PASS again.
+
+### 3.3 Sign-Off & MPW Submission
+
+Once your specification (`docs/design-spec.md`), reference materials (`reference/`), and RTL/constraints/testbench are ready:
+
+1. **Run the End-to-End Sign-Off Pipeline** (choose one of three execution modes):
+   - **Local (or via Gemini / Antigravity)**:
+     ```bash
+     bash flow/run_all.sh
+     ```
+   - **Docker Container (`OpenSUSI-EDA-Container`, no local EDA install required)**:
+     ```bash
+     docker run --rm --platform linux/amd64 -v "$PWD:/work" opensusi-eda:v0.1.0 bash flow/run_all.sh
+     ```
+   - **GitHub Actions / GCP Cloud Batch**:
+     ```bash
+     git add design.yaml docs/design-spec.md reference/ rtl/ constraints/ verification/
+     git commit -m "feat: implement design and constraints"
+     git push origin main
+     ```
+     Push triggers [`.github/workflows/design-ci.yml`](.github/workflows/design-ci.yml). For full cloud sign-off on GCP Cloud Batch, run `workflow_dispatch` with `execution_backend: gcp-batch` (or set `gcp.enabled: true` in `design.yaml`).
+
+2. **Verify Sign-Off Telemetry (`output/reports/summary.json`)**:
+   ```bash
+   cat output/reports/summary.json
+   ```
+   Confirm:
+   - `"overall_status": "PASS"`
+   - All 10 gates in `checks` (`rtl_sim`, `synth`, `gl_sim`, `floorplan`, `route`, `precheck`, `drc`, `lvs`, `mdp_ip62`, `sta`) are `"PASS"`
+   - `openroad_drc == 0`, `klayout_drc_errors == 0`, `lvs_match == true`, `ip62_drc_errors == 0`, and `sta_wns_ns >= 0.0`
+
+3. **Inspect & Submit the MPW Bundle**:
+   - Optionally open `output/gds/<top_cell>.gds` in KLayout GUI for visual inspection.
+   - Submit `output/package/<top_cell>_mpw_bundle.tar.gz` (verified by SHA-256 checksums in `output/package/manifest.json`) to the OpenSUSI MPW Submission Gateway.
