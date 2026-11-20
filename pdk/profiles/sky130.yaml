@@ -1,0 +1,114 @@
+# ==============================================================================
+# Google / SkyWater SKY130 (130 nm CMOS, sky130_fd_sc_hd) Adapter Profile — Option B
+# Upstream: https://github.com/google/skywater-pdk
+# Mount as single target PDK:
+#   git submodule add -b main https://github.com/google/skywater-pdk.git pdk/sky130
+#   git -C pdk/sky130 submodule update --init libraries/sky130_fd_sc_hd/latest
+#   make -C pdk/sky130 timing
+#   python3 scripts/prepare_sky130.py
+# (Also supports pre-built open_pdks / volare sky130A tree placed at pdk/sky130/)
+# ==============================================================================
+
+name: "sky130"
+display_name: "SkyWater SKY130 (130 nm CMOS, sky130_fd_sc_hd, 5M+LI, 1.8 V)"
+status: "active"
+flow_driver: "openroad_std"
+
+upstream:
+  repo: "https://github.com/google/skywater-pdk.git"
+  ref: "main"
+  dir: "libraries/sky130_fd_sc_hd/latest"
+
+technology:
+  node_nm: 130
+  vdd_v: 1.8
+  dbu_um: 0.001
+  dbu_per_micron: 1000
+  metal_layers: "met1-met5"
+  clock_metal_layers: "met3-met5"
+  top_cell_prefix: "sky130_"
+
+geometry:
+  die_origin: "zero"
+  die_width_um: 200.0
+  die_height_um: 200.0
+  core_margin_um: 10.0
+  core_width_um: 180.0
+  core_height_um: 180.0
+  core_offset_x_um: 10.0
+  core_offset_y_um: 10.0
+  site_name: "unithd"
+  site_width_um: 0.46
+  row_height_um: 2.72
+  num_rows: 0
+  row_origin_y_um: 0.0
+  row_pitch_um: 2.72
+  frame_cells: []
+
+synthesis:
+  dont_use_cells:
+    - "sky130_fd_sc_hd__clkdlyinv3sd1_1"
+    - "sky130_fd_sc_hd__clkdlyinv3sd2_1"
+    - "sky130_fd_sc_hd__clkdlyinv3sd3_1"
+    - "sky130_fd_sc_hd__clkdlyinv5sd1_1"
+    - "sky130_fd_sc_hd__clkdlyinv5sd2_1"
+    - "sky130_fd_sc_hd__clkdlyinv5sd3_1"
+    - "sky130_fd_sc_hd__probe_p_8"
+    - "sky130_fd_sc_hd__probec_p_8"
+  buffer_cell: "sky130_fd_sc_hd__buf_2"
+  buffer_in_pin: "A"
+  buffer_out_pin: "X"
+  tie_cells_supported: true
+  tie_hi_cell: "sky130_fd_sc_hd__conb_1"
+  tie_hi_pin: "HI"
+  tie_lo_cell: "sky130_fd_sc_hd__conb_1"
+  tie_lo_pin: "LO"
+
+placement:
+  place_density: 0.60
+  pin_hor_layer: "met3"
+  pin_ver_layer: "met2"
+  tap_cell: "sky130_fd_sc_hd__tapvpwrvgnd_1"
+  tap_distance_um: 14
+  endcap_cell: "sky130_fd_sc_hd__decap_3"
+  filler_cells:
+    - "sky130_fd_sc_hd__fill_8"
+    - "sky130_fd_sc_hd__fill_4"
+    - "sky130_fd_sc_hd__fill_2"
+    - "sky130_fd_sc_hd__fill_1"
+
+# Populated automatically by `python3 scripts/prepare_sky130.py` into output/pdk_cache/sky130/
+# from either the raw `google/skywater-pdk` submodule OR an `open_pdks/volare` sky130A tree.
+views:
+  liberty: "output/pdk_cache/sky130/sky130_fd_sc_hd__tt_025C_1v80.lib"
+  tech_lef: "output/pdk_cache/sky130/sky130_fd_sc_hd.tlef"
+  grt_cells_lef: "output/pdk_cache/sky130/sky130_fd_sc_hd.lef"
+  drt_cells_lef: "output/pdk_cache/sky130/sky130_fd_sc_hd.lef"
+  stdcell_gds: "output/pdk_cache/sky130/sky130_fd_sc_hd.gds"
+  stdcell_spice: "output/pdk_cache/sky130/sky130_fd_sc_hd.spice"
+  primitives_v: "output/pdk_cache/sky130/sky130_fd_sc_hd.v"
+  verilog_models:
+    - "output/pdk_cache/sky130/primitives.v"
+    - "output/pdk_cache/sky130/sky130_fd_sc_hd.v"
+  dffe_map: ""
+  abc_constr: ""
+  frame_gds: ""
+  klayout_map: ""
+  klayout_lyp: "output/pdk_cache/sky130/sky130A.lyp"
+
+signoff:
+  drc_mode: "sky130"
+  lvs_mode: "sky130"
+  drc_deck: "output/pdk_cache/sky130/sky130A_mr.drc"
+  lvs_deck: "output/pdk_cache/sky130/sky130.lvs"
+  mdp_deck: ""
+  ip62_deck: ""
+
+padframe:
+  frame_cell: ""
+  wrapper_cell: ""
+  total_pads: 0
+  signal_pads: []
+  power_pads:
+    vdd: "VPWR"
+    vss: "VGND"

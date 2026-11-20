@@ -41,8 +41,11 @@ hierarchy -check -top ${DESIGN_TOP_MODULE}
 proc; opt -full; memory; opt -full
 wreduce; peepopt; opt_clean
 ${TECHMAP_CMD}; opt -full
-dfflegalize -cell \$_DFFE_PN0P_ 01 -cell \$_DFFE_PN0N_ 01 -cell \$_DFF_PN0_ 01
 EOF
+
+if [[ "${PDK_FLOW_DRIVER}" == "tr1um_2m" ]]; then
+    echo 'dfflegalize -cell $_DFFE_PN0P_ 01 -cell $_DFFE_PN0N_ 01 -cell $_DFF_PN0_ 01' >> "${YOSYS_SCRIPT}"
+fi
 
 if [[ -n "${PDK_DFFE_MAP}" && -f "${PDK_DFFE_MAP}" ]]; then
     echo "techmap -map ${PDK_DFFE_MAP}" >> "${YOSYS_SCRIPT}"
@@ -53,9 +56,22 @@ dfflibmap -liberty ${PDK_LIBERTY}
 opt -full
 abc -liberty ${PDK_LIBERTY} ${DONT_USE_FLAGS}
 opt_clean -purge
+EOF
+
+if [[ -n "${PDK_TIE_HI_CELL}" && -n "${PDK_TIE_LO_CELL}" ]]; then
+    cat >> "${YOSYS_SCRIPT}" <<EOF
+hilomap -hicell ${PDK_TIE_HI_CELL} ${PDK_TIE_HI_PIN} -locell ${PDK_TIE_LO_CELL} ${PDK_TIE_LO_PIN}
+EOF
+fi
+
+if [[ -n "${PDK_BUFFER_CELL}" ]]; then
+    cat >> "${YOSYS_SCRIPT}" <<EOF
 insbuf -buf ${PDK_BUFFER_CELL} ${PDK_BUFFER_IN_PIN} ${PDK_BUFFER_OUT_PIN}
 opt_clean -purge
+EOF
+fi
 
+cat >> "${YOSYS_SCRIPT}" <<EOF
 # Bus-port gate-level netlist for testbench simulation
 write_verilog -noattr -noexpr -nohex output/work/${DESIGN_TOP_MODULE}_gl.v
 
@@ -71,8 +87,18 @@ EOF
 "${YOSYS_BIN}" -s "${YOSYS_SCRIPT}" 2>&1 | tee output/logs/synth.log
 
 echo "=== [4/4] Gate-Level Simulation (Post-Synthesis) ==="
-"${IVERILOG_BIN}" -g2005 -DGATE_LEVEL -o output/work/sim_gl.vvp \
-    "${PDK_PRIMITIVES_V}" \
+GL_EXTRA_FLAGS=()
+if [[ "${PDK_FLOW_DRIVER}" != "tr1um_2m" ]]; then
+    GL_EXTRA_FLAGS+=("-DFUNCTIONAL" "-DUNIT_DELAY=#1")
+fi
+GL_MODELS=()
+for vf in ${PDK_VERILOG_MODELS:-${PDK_PRIMITIVES_V}}; do
+    if [[ -f "${vf}" ]]; then
+        GL_MODELS+=("${vf}")
+    fi
+done
+"${IVERILOG_BIN}" -g2005 -DGATE_LEVEL "${GL_EXTRA_FLAGS[@]}" -o output/work/sim_gl.vvp \
+    "${GL_MODELS[@]}" \
     "output/work/${DESIGN_TOP_MODULE}_gl.v" \
     "${DESIGN_TESTBENCH}"
 "${VVP_BIN}" output/work/sim_gl.vvp | tee output/logs/gl_sim.log

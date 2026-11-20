@@ -26,32 +26,60 @@ if [[ "${SIGNOFF_PRECHECK}" == "true" ]]; then
 fi
 
 # 2. KLayout DRC
-if [[ "${SIGNOFF_DRC}" == "true" ]]; then
-    echo "=== [2/6] KLayout Full-Chip DRC ==="
-    "${KLAYOUT_BIN}" -b -r "${PDK_DRC_DECK}" \
-        -rd input="${REPO_ROOT}/${SUB_GDS}" \
-        -rd top_cell="${DESIGN_TOP_CELL}" \
-        -rd report="${DRC_RPT}" 2>&1 | tee output/logs/drc.log
-    if grep -q "<visited>false</visited>" "${DRC_RPT}"; then
+if [[ "${SIGNOFF_DRC}" == "true" && -n "${PDK_DRC_DECK}" && -f "${PDK_DRC_DECK}" ]]; then
+    echo "=== [2/6] KLayout Full-Chip DRC (mode=${PDK_DRC_MODE}) ==="
+    case "${PDK_DRC_MODE}" in
+        ihp)
+            "${KLAYOUT_BIN}" -b -r "${PDK_DRC_DECK}" \
+                -rd in_gds="${REPO_ROOT}/${SUB_GDS}" \
+                -rd cell="${DESIGN_TOP_CELL}" \
+                -rd report_file="${DRC_RPT}" 2>&1 | tee output/logs/drc.log
+            ;;
+        sky130)
+            "${KLAYOUT_BIN}" -b -r "${PDK_DRC_DECK}" \
+                -rd input="${REPO_ROOT}/${SUB_GDS}" \
+                -rd topcell="${DESIGN_TOP_CELL}" \
+                -rd report="${DRC_RPT}" 2>&1 | tee output/logs/drc.log
+            ;;
+        *)
+            "${KLAYOUT_BIN}" -b -r "${PDK_DRC_DECK}" \
+                -rd input="${REPO_ROOT}/${SUB_GDS}" \
+                -rd top_cell="${DESIGN_TOP_CELL}" \
+                -rd report="${DRC_RPT}" 2>&1 | tee output/logs/drc.log
+            ;;
+    esac
+    if [[ -f "${DRC_RPT}" ]] && grep -q "<visited>false</visited>" "${DRC_RPT}"; then
         echo "ERROR: KLayout DRC violations found in ${DRC_RPT}" >&2
         exit 1
     fi
 fi
 
 # 3. KLayout LVS (strict port mode)
-if [[ "${SIGNOFF_LVS_ENABLED}" == "true" ]]; then
-    echo "=== [3/6] KLayout Full-Chip LVS ==="
+if [[ "${SIGNOFF_LVS_ENABLED}" == "true" && -n "${PDK_LVS_DECK}" && -f "${PDK_LVS_DECK}" ]]; then
+    echo "=== [3/6] KLayout Full-Chip LVS (mode=${PDK_LVS_MODE}) ==="
     LVS_EXTRA=""
     if [[ "${SIGNOFF_LVS_NETLIST_ONLY}" == "true" ]]; then
         LVS_EXTRA="-rd netlist_only=true"
     fi
-    "${KLAYOUT_BIN}" -b -r "${PDK_LVS_DECK}" \
-        -rd input="${REPO_ROOT}/${SUB_GDS}" \
-        -rd top_cell="${DESIGN_TOP_CELL}" \
-        -rd circuit="${DESIGN_TOP_CELL}.cir" \
-        -rd extracted="${SUB_EXT}" \
-        -rd report="${LVS_RPT}" \
-        ${LVS_EXTRA} 2>&1 | tee output/logs/lvs.log
+    case "${PDK_LVS_MODE}" in
+        ihp|sky130)
+            "${KLAYOUT_BIN}" -b -r "${PDK_LVS_DECK}" \
+                -rd input="${REPO_ROOT}/${SUB_GDS}" \
+                -rd topcell="${DESIGN_TOP_CELL}" \
+                -rd schematic="${REPO_ROOT}/${SUB_CIR}" \
+                -rd report="${LVS_RPT}" \
+                ${LVS_EXTRA} 2>&1 | tee output/logs/lvs.log
+            ;;
+        *)
+            "${KLAYOUT_BIN}" -b -r "${PDK_LVS_DECK}" \
+                -rd input="${REPO_ROOT}/${SUB_GDS}" \
+                -rd top_cell="${DESIGN_TOP_CELL}" \
+                -rd circuit="${DESIGN_TOP_CELL}.cir" \
+                -rd extracted="${SUB_EXT}" \
+                -rd report="${LVS_RPT}" \
+                ${LVS_EXTRA} 2>&1 | tee output/logs/lvs.log
+            ;;
+    esac
     if grep -q "ERROR : Netlists don't match" output/logs/lvs.log; then
         echo "ERROR: KLayout LVS FAILED (netlists don't match)" >&2
         exit 1

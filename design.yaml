@@ -12,10 +12,11 @@ project:
   github_user: "opensusi_poc"
   description: "PoC digital core validating the OpenSUSI x Google GitHub-to-Silicon AI-Assisted Chip Design Platform on TR-1um before NEW-130E 130nm PDK drop-in."
 
-# Active PDK selection ("tr1um" for PoC, "new130e" for target 130nm MPW)
+# Active PDK selection (Choose ONE target PDK mounted under pdk/<name>/)
+# Adapter profiles live in pdk/profiles/<name>.yaml (Option B: decoupled from PDK submodule)
 pdk:
   name: "tr1um"
-  profile: "pdk/tr1um/pdk.yaml"
+  profile: "pdk/profiles/tr1um.yaml"
 
 design:
   top_module: "top"

@@ -131,21 +131,48 @@ def validate_pre(root: Path) -> list[str]:
     if top_cell and not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*", top_cell):
         errors.append(f"[POLICY] design.top_cell '{top_cell}' contains invalid characters")
 
-    # 4. Validate PDK readiness
+    # 4. Validate single-target PDK policy & PDK readiness
+    pdk_root = root / "pdk"
+    mounted_pdks = sorted(
+        d.name for d in pdk_root.iterdir()
+        if d.is_dir() and d.name != "profiles" and not d.name.startswith(".")
+    )
+    if len(mounted_pdks) > 1:
+        errors.append(
+            f"[POLICY] Multiple target PDK directories mounted under pdk/: {', '.join(mounted_pdks)}. "
+            "Each design repository must select exactly ONE target PDK."
+        )
+
     if pdk.get("status") == "scaffold":
         errors.append(
             f"[PDK] Active PDK '{pdk.get('name')}' is still in 'scaffold' state. "
-            "Populate foundry views/decks or switch pdk.name to 'tr1um' for PoC."
+            "Mount the target PDK submodule under pdk/<name>/ and update pdk/profiles/<name>.yaml, "
+            "or switch pdk.name to 'tr1um' for PoC."
         )
     else:
-        for view_key in ("liberty", "tech_lef", "grt_cells_lef", "drt_cells_lef", "stdcell_gds", "frame_gds", "primitives_v"):
+        active_pdk_dir = pdk_root / str(pdk.get("name", ""))
+        if not active_pdk_dir.is_dir() or not any(active_pdk_dir.iterdir()):
+            errors.append(
+                f"[PDK] Target PDK directory 'pdk/{pdk.get('name')}' is missing or empty "
+                "(if using a Git submodule, run: git submodule update --init --recursive)."
+            )
+        required_views = ["liberty", "tech_lef", "grt_cells_lef", "drt_cells_lef", "stdcell_gds", "primitives_v"]
+        if pdk.get("padframe", {}).get("total_pads", 0) > 0 or pdk.get("views", {}).get("frame_gds"):
+            required_views.append("frame_gds")
+        for view_key in required_views:
             rel = pdk.get("views", {}).get(view_key)
             if not rel or not (root / rel).exists():
-                errors.append(f"[PDK] Missing view '{view_key}': {rel}")
-        for deck_key in ("drc_deck", "lvs_deck"):
-            rel = pdk.get("signoff", {}).get(deck_key)
+                hint = " (for sky130, run: python3 scripts/prepare_sky130.py)" if rel and "pdk_cache/sky130" in str(rel) else ""
+                errors.append(f"[PDK] Missing view '{view_key}': {rel}{hint}")
+        d_sig = design.get("signoff", {})
+        if d_sig.get("drc", True):
+            rel = pdk.get("signoff", {}).get("drc_deck")
             if not rel or not (root / rel).exists():
-                errors.append(f"[PDK] Missing sign-off deck '{deck_key}': {rel}")
+                errors.append(f"[PDK] Missing sign-off deck 'drc_deck': {rel}")
+        if d_sig.get("lvs", {}).get("enabled", True):
+            rel = pdk.get("signoff", {}).get("lvs_deck")
+            if not rel or not (root / rel).exists():
+                errors.append(f"[PDK] Missing sign-off deck 'lvs_deck': {rel}")
 
     # 5. Validate RTL, constraints, testbench existence
     rtl_rel = des.get("rtl_files", [])

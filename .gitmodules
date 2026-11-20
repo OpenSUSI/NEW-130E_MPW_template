@@ -1,0 +1,4 @@
+[submodule "pdk/tr1um"]
+	path = pdk/tr1um
+	url = https://github.com/OpenSUSI/TR-1um.git
+	branch = dev

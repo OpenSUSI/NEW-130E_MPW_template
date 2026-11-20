@@ -66,19 +66,29 @@ def main() -> None:
     print(f"OK: DBU is {layout.dbu:.3f} um.")
 
     bbox = tc.dbbox()
-    exp_p1 = (-die_w / 2.0, -die_h / 2.0)
-    exp_p2 = (die_w / 2.0, die_h / 2.0)
-    if not (
-        same_float(bbox.left, exp_p1[0])
-        and same_float(bbox.bottom, exp_p1[1])
-        and same_float(bbox.right, exp_p2[0])
-        and same_float(bbox.top, exp_p2[1])
-    ):
-        fail(
-            f"Die bbox ({bbox.left:.2f},{bbox.bottom:.2f})-({bbox.right:.2f},{bbox.top:.2f}) "
-            f"!= expected ({exp_p1[0]:.2f},{exp_p1[1]:.2f})-({exp_p2[0]:.2f},{exp_p2[1]:.2f})."
-        )
-    print(f"OK: Die bbox matches ({exp_p1[0]:.1f},{exp_p1[1]:.1f})-({exp_p2[0]:.1f},{exp_p2[1]:.1f}) um.")
+    die_origin = geom.get("die_origin", "center")
+    if die_origin == "zero":
+        # Standard OpenROAD block/die coordinate space: (0, 0) to (die_w, die_h)
+        if bbox.left < -EPS or bbox.bottom < -EPS or bbox.right > die_w + EPS or bbox.top > die_h + EPS:
+            fail(
+                f"Layout bbox ({bbox.left:.2f},{bbox.bottom:.2f})-({bbox.right:.2f},{bbox.top:.2f}) "
+                f"exceeds die area (0.00,0.00)-({die_w:.2f},{die_h:.2f})."
+            )
+        print(f"OK: Layout bbox ({bbox.left:.1f},{bbox.bottom:.1f})-({bbox.right:.1f},{bbox.top:.1f}) fits within (0,0)-({die_w:.1f},{die_h:.1f}) um.")
+    else:
+        exp_p1 = (-die_w / 2.0, -die_h / 2.0)
+        exp_p2 = (die_w / 2.0, die_h / 2.0)
+        if not (
+            same_float(bbox.left, exp_p1[0])
+            and same_float(bbox.bottom, exp_p1[1])
+            and same_float(bbox.right, exp_p2[0])
+            and same_float(bbox.top, exp_p2[1])
+        ):
+            fail(
+                f"Die bbox ({bbox.left:.2f},{bbox.bottom:.2f})-({bbox.right:.2f},{bbox.top:.2f}) "
+                f"!= expected ({exp_p1[0]:.2f},{exp_p1[1]:.2f})-({exp_p2[0]:.2f},{exp_p2[1]:.2f})."
+            )
+        print(f"OK: Die bbox matches ({exp_p1[0]:.1f},{exp_p1[1]:.1f})-({exp_p2[0]:.1f},{exp_p2[1]:.1f}) um.")
 
     if frame_cells:
         present = {c.name for c in layout.each_cell()}

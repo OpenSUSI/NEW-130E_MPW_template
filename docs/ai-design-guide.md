@@ -9,7 +9,7 @@ This guide explains how designers collaborate with **Gemini / Vertex AI** (or co
 1. **Clone the Template**: Create a new repository from `NEW-130E_MPW_template`.
 2. **Author Your Specification**: Describe your chip's architecture, I/O pinout, and PPA goals in [`docs/design-spec.md`](design-spec.md) and update project metadata in [`design.yaml`](../design.yaml).
 3. **Collaborate with Gemini**:
-   - Gemini reads `GEMINI.md`, `AGENTS.md`, `design.yaml`, `pdk/<active>/pdk.yaml`, and `docs/design-spec.md`.
+   - Gemini reads `GEMINI.md`, `AGENTS.md`, `design.yaml`, `pdk/profiles/<active>.yaml`, and `docs/design-spec.md`.
    - Gemini generates/refines `rtl/top.v`, `constraints/timing.sdc`, `constraints/pin_order.cfg`, and `verification/testbench/tb_top.v`.
 4. **Run EDA Pipeline (Locally or on GCP via GitHub Actions)**:
    ```bash
@@ -26,7 +26,7 @@ This guide explains how designers collaborate with **Gemini / Vertex AI** (or co
 
 ## 2. Migrating from TR-1um PoC to NEW-130E (130 nm)
 
-The template isolates foundry specifics inside `pdk/<pdk_name>/`:
+The template isolates foundry specifics using **Option B (decoupled adapter profiles + single target PDK Git Submodule)** (see [`pdk/README.md`](../pdk/README.md)):
 
-- **Today (PoC)**: `pdk.name: "tr1um"` runs a complete 2-metal 1 µm CMOS tapeout flow (Yosys → TR-1um TAP2 placer → OpenROAD GRT/DRT → KLayout GDS/DRC/LVS/MDP/IP62).
-- **Target (130 nm Fab)**: Populate `pdk/new130e/` with foundry Tech/StdCell LEF, Liberty, GDS, SPICE, padframe, and DRC/LVS decks, then change `pdk.name: "new130e"` in `design.yaml`. All template validation, AI agent prompts (`AGENTS.md`/`GEMINI.md`), CI triggers, telemetry (`summary.json`), and packaging (`package.py`) remain unchanged.
+- **Today (PoC)**: `pdk.name: "tr1um"` (`pdk/profiles/tr1um.yaml`) runs a complete 2-metal 1 µm CMOS tapeout flow (Yosys → TR-1um TAP2 placer → OpenROAD GRT/DRT → KLayout GDS/DRC/LVS/MDP/IP62).
+- **Target (130 nm Fab)**: Remove `pdk/tr1um`, mount the single target PDK repository as a Git Submodule at `pdk/new130e/`, update `pdk/profiles/new130e.yaml`, and set `pdk.name: "new130e"` / `pdk.profile: "pdk/profiles/new130e.yaml"` in `design.yaml`. All template validation, AI agent prompts (`AGENTS.md`/`GEMINI.md`), CI triggers, telemetry (`summary.json`), and packaging (`package.py`) remain unchanged.

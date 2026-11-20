@@ -2,8 +2,11 @@
 
 Standardized **GitHub-to-Silicon** design repository template for the OpenSUSI × Google AI-Assisted Chip Design Platform.
 
-- **Target Production PDK**: **NEW-130E** (new 130 nm CMOS foundry PDK — adapter contract in [`pdk/new130e/`](pdk/new130e/README.md))
-- **Active PoC PDK**: OpenSUSI **TR-1um** (`1.0 µm` CMOS, 2-Metal `M1`/`M2`, `5.0 V`, 16-pin `OSS_FRAME_GIO` — self-contained PoC backend in [`pdk/tr1um/`](pdk/tr1um/pdk.yaml))
+- **Target Production PDK**: **NEW-130E** (new 130 nm CMOS foundry PDK — adapter profile in [`pdk/profiles/new130e.yaml`](pdk/profiles/new130e.yaml), guide in [`pdk/profiles/new130e.md`](pdk/profiles/new130e.md))
+- **Supported Open 130 nm PDKs (Git Submodule)**:
+  - **IHP-130 (`SG13G2`)** — [`pdk/profiles/ihp_sg13g2.yaml`](pdk/profiles/ihp_sg13g2.yaml) / [`ihp_sg13g2.md`](pdk/profiles/ihp_sg13g2.md) (https://github.com/IHP-GmbH/IHP-Open-PDK)
+  - **SkyWater `SKY130`** — [`pdk/profiles/sky130.yaml`](pdk/profiles/sky130.yaml) / [`sky130.md`](pdk/profiles/sky130.md) (https://github.com/google/skywater-pdk)
+- **Active PoC PDK**: OpenSUSI **TR-1um** (`1.0 µm` CMOS, 2-Metal `M1`/`M2`, `5.0 V`, 16-pin `OSS_FRAME_GIO` — adapter profile in [`pdk/profiles/tr1um.yaml`](pdk/profiles/tr1um.yaml), see [`pdk/README.md`](pdk/README.md) for the **Single Target PDK** Submodule policy)
 
 ---
 
@@ -17,9 +20,10 @@ NEW-130E_MPW_template/
 ├── AGENTS.md                 # AI Agent common contract (Prefix / Fixed)
 ├── GEMINI.md                 # Gemini / Vertex AI specific instructions (Prefix / Fixed)
 ├── design.yaml               # Unified project / PDK / target / CI config (Prefix schema)
-├── pdk/                      # PDK profiles (tr1um PoC active; new130e 130nm scaffold)
-│   ├── tr1um/                # Self-contained TR-1um PoC LEF/LIB/GDS/SPICE/DRC/LVS/MDP
-│   └── new130e/              # Target 130nm foundry PDK adapter contract
+├── pdk/                      # Single target PDK (Git Submodule) + decoupled profiles
+│   ├── README.md             # Single-PDK policy & Git Submodule setup guide
+│   ├── profiles/             # Template-managed PDK adapter profiles (tr1um, ihp_sg13g2, sky130, new130e)
+│   └── tr1um/                # Default target PDK Git Submodule (OpenSUSI/TR-1um @ dev)
 ├── rtl/
 │   └── top.v                 # Synthesizable RTL (PoC: 4-bit Registered ALU/Accumulator)
 ├── constraints/
@@ -50,6 +54,7 @@ NEW-130E_MPW_template/
 ├── docs/
 │   ├── design-spec.md        # Designer target specification (input to Gemini)
 │   └── ai-design-guide.md    # AI-Assisted Chip Design workflow guide
+├── reference/                # Designer reference materials (datasheets, specs, papers)
 └── output/                   # GCP / CI controlled outputs (Prefix / Fixed)
     ├── gds/
     ├── reports/

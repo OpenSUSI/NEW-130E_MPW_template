@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Generic TR-1um 2-Metal (M1/M2) Floorplanner, Placer, and Active Decap Filler.
-Reads synthesized Verilog netlist, design.yaml, pdk/tr1um/pdk.yaml, and
+Reads synthesized Verilog netlist, design.yaml, pdk/profiles/tr1um.yaml, and
 constraints/pin_order.cfg to produce a legalized OpenROAD placement DEF
 with 11 rows x 3 segments (4 TAP2 columns) and FILL3/FILL2 decap fill (FILL1=0).
 """

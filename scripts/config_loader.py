@@ -140,7 +140,11 @@ def load_design_and_pdk(root: Path | None = None) -> tuple[dict[str, Any], dict[
     pdk_profile = design.get("pdk", {}).get("profile")
     if not pdk_profile:
         pdk_name = design.get("pdk", {}).get("name", "tr1um")
-        pdk_profile = f"pdk/{pdk_name}/pdk.yaml"
+        candidate = f"pdk/profiles/{pdk_name}.yaml"
+        if (base / candidate).is_file():
+            pdk_profile = candidate
+        else:
+            pdk_profile = f"pdk/{pdk_name}/pdk.yaml"
     pdk = load_yaml(base / pdk_profile)
     return design, pdk
 
@@ -174,6 +178,12 @@ def export_shell_vars(root: Path) -> str:
     p_sig = pdk.get("signoff", {})
     p_syn = pdk.get("synthesis", {})
     p_tech = pdk.get("technology", {})
+    p_geom = pdk.get("geometry", {})
+    p_plc = pdk.get("placement", {})
+
+    v_models = p_views.get("verilog_models") or []
+    if not v_models and p_views.get("primitives_v"):
+        v_models = [p_views["primitives_v"]]
 
     kv = {
         "DESIGN_PROJECT_NAME": str(design["project"]["name"]),
@@ -195,13 +205,23 @@ def export_shell_vars(root: Path) -> str:
         "PDK_NAME": str(pdk["name"]),
         "PDK_FLOW_DRIVER": str(pdk.get("flow_driver", "tr1um_2m")),
         "PDK_METAL_LAYERS": str(p_tech.get("metal_layers", "METAL1-METAL2")),
+        "PDK_CLOCK_METAL_LAYERS": str(p_tech.get("clock_metal_layers", p_tech.get("metal_layers", "METAL1-METAL2"))),
+        "PDK_DIE_WIDTH_UM": str(p_geom.get("die_width_um", 200.0)),
+        "PDK_DIE_HEIGHT_UM": str(p_geom.get("die_height_um", 200.0)),
+        "PDK_CORE_MARGIN_UM": str(p_geom.get("core_margin_um", 10.0)),
+        "PDK_SITE_NAME": str(p_geom.get("site_name", "")),
         "PDK_LIBERTY": str(p_views.get("liberty", "")),
         "PDK_TECH_LEF": str(p_views.get("tech_lef", "")),
         "PDK_GRT_CELLS_LEF": str(p_views.get("grt_cells_lef", "")),
         "PDK_DRT_CELLS_LEF": str(p_views.get("drt_cells_lef", "")),
+        "PDK_STDCELL_GDS": str(p_views.get("stdcell_gds", "")),
+        "PDK_STDCELL_SPICE": str(p_views.get("stdcell_spice", "")),
         "PDK_DFFE_MAP": str(p_views.get("dffe_map", "")),
         "PDK_PRIMITIVES_V": str(p_views.get("primitives_v", "")),
+        "PDK_VERILOG_MODELS": " ".join(str(x) for x in v_models),
         "PDK_ABC_CONSTR": str(p_views.get("abc_constr", "")),
+        "PDK_DRC_MODE": str(p_sig.get("drc_mode", "tr1um" if pdk.get("flow_driver", "tr1um_2m") == "tr1um_2m" else "generic")),
+        "PDK_LVS_MODE": str(p_sig.get("lvs_mode", "tr1um" if pdk.get("flow_driver", "tr1um_2m") == "tr1um_2m" else "generic")),
         "PDK_DRC_DECK": str(p_sig.get("drc_deck", "")),
         "PDK_LVS_DECK": str(p_sig.get("lvs_deck", "")),
         "PDK_MDP_DECK": str(p_sig.get("mdp_deck", "")),
@@ -210,6 +230,17 @@ def export_shell_vars(root: Path) -> str:
         "PDK_BUFFER_CELL": str(p_syn.get("buffer_cell", "BUF_X2")),
         "PDK_BUFFER_IN_PIN": str(p_syn.get("buffer_in_pin", "A")),
         "PDK_BUFFER_OUT_PIN": str(p_syn.get("buffer_out_pin", "Y")),
+        "PDK_TIE_HI_CELL": str(p_syn.get("tie_hi_cell", "")),
+        "PDK_TIE_HI_PIN": str(p_syn.get("tie_hi_pin", "")),
+        "PDK_TIE_LO_CELL": str(p_syn.get("tie_lo_cell", "")),
+        "PDK_TIE_LO_PIN": str(p_syn.get("tie_lo_pin", "")),
+        "PDK_PLACE_DENSITY": str(p_plc.get("place_density", 0.60)),
+        "PDK_PIN_HOR_LAYER": str(p_plc.get("pin_hor_layer", "")),
+        "PDK_PIN_VER_LAYER": str(p_plc.get("pin_ver_layer", "")),
+        "PDK_TAP_CELL": str(p_plc.get("tap_cell", "")),
+        "PDK_TAP_DISTANCE_UM": str(p_plc.get("tap_distance_um", 0)),
+        "PDK_ENDCAP_CELL": str(p_plc.get("endcap_cell", "")),
+        "PDK_FILLER_CELLS": " ".join(str(x) for x in p_plc.get("filler_cells", [])),
     }
     return "\n".join(f"export {k}={shlex.quote(v)}" for k, v in kv.items())
 

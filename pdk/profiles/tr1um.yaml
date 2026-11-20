@@ -52,24 +52,28 @@ synthesis:
   tie_cells_supported: false
 
 views:
-  liberty: "pdk/tr1um/stdcell/tr1um_typ_5v0_25c.lib"
-  cell_info_json: "pdk/tr1um/stdcell/cell_info.json"
-  stdcell_gds: "pdk/tr1um/stdcell/TR-1um_STDCELL.gds"
-  stdcell_spice_dir: "pdk/tr1um/stdcell/simulation"
-  pad_spice: "pdk/tr1um/spice/oss_esd_pads.spice"
-  tech_lef: "pdk/tr1um/openroad/TR-1um_tech_clean.lef"
-  grt_cells_lef: "pdk/tr1um/openroad/TR-1um_cells_grt_m1.lef"
-  drt_cells_lef: "pdk/tr1um/openroad/TR-1um_cells_m2only.lef"
-  dffe_map: "pdk/tr1um/openroad/dffe_map.v"
-  primitives_v: "pdk/tr1um/openroad/primitives.v"
-  abc_constr: "pdk/tr1um/openroad/abc.constr"
-  frame_gds: "pdk/tr1um/klayout/libraries/TR-1um_frame_25x25.gds"
+  # Digital RTL-to-GDS collateral (until upstreamed into OpenSUSI/TR-1um)
+  liberty: "pdk/profiles/tr1um_collateral/stdcell/tr1um_typ_5v0_25c.lib"
+  cell_info_json: "pdk/profiles/tr1um_collateral/stdcell/cell_info.json"
+  stdcell_gds: "pdk/profiles/tr1um_collateral/stdcell/TR-1um_STDCELL.gds"
+  stdcell_spice_dir: "pdk/profiles/tr1um_collateral/stdcell/simulation"
+  pad_spice: "pdk/profiles/tr1um_collateral/spice/oss_esd_pads.spice"
+  tech_lef: "pdk/profiles/tr1um_collateral/openroad/TR-1um_tech_clean.lef"
+  grt_cells_lef: "pdk/profiles/tr1um_collateral/openroad/TR-1um_cells_grt_m1.lef"
+  drt_cells_lef: "pdk/profiles/tr1um_collateral/openroad/TR-1um_cells_m2only.lef"
+  dffe_map: "pdk/profiles/tr1um_collateral/openroad/dffe_map.v"
+  primitives_v: "pdk/profiles/tr1um_collateral/openroad/primitives.v"
+  abc_constr: "pdk/profiles/tr1um_collateral/openroad/abc.constr"
+  # Official OpenSUSI/TR-1um submodule views
+  frame_gds: "pdk/tr1um/libs.tech/klayout/libraries/TR-1um_frame_25x25.gds"
 
 signoff:
-  drc_deck: "pdk/tr1um/klayout/tech/drc/run.drc"
-  lvs_deck: "pdk/tr1um/klayout/tech/lvs/run.lvs"
-  mdp_deck: "pdk/tr1um/klayout/tech/drc/run_mdp.drc"
-  ip62_deck: "pdk/tr1um/klayout/tech/drc/run_IP62.drc"
+  drc_mode: "tr1um"
+  lvs_mode: "tr1um"
+  drc_deck: "pdk/tr1um/libs.tech/klayout/tech/drc/run.drc"
+  lvs_deck: "pdk/tr1um/libs.tech/klayout/tech/lvs/run.lvs"
+  mdp_deck: "pdk/tr1um/libs.tech/klayout/tech/drc/run_mdp.drc"
+  ip62_deck: "pdk/tr1um/libs.tech/klayout/tech/drc/run_IP62.drc"
 
 padframe:
   frame_cell: "OSS_FRAME_GIO"

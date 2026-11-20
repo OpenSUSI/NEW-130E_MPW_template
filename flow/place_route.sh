@@ -25,8 +25,9 @@ exit
 EOF
 "${OPENROAD_BIN}" -exit output/work/run_grt.tcl 2>&1 | tee output/logs/global_route.log
 
-echo "=== [2/4] Routing Guide Expansion ==="
-python3 - "${GUIDE_RAW}" "${GUIDE_EXP}" <<'PYEOF'
+if [[ "${PDK_FLOW_DRIVER}" == "tr1um_2m" ]]; then
+    echo "=== [2/4] Routing Guide Expansion (TR-1um 2-Metal) ==="
+    python3 - "${GUIDE_RAW}" "${GUIDE_EXP}" <<'PYEOF'
 import re, sys
 from pathlib import Path
 
@@ -44,13 +45,18 @@ for line in in_p.read_text(encoding="utf-8").splitlines():
 out_p.write_text("\n".join(out) + "\n", encoding="utf-8")
 print(f"Expanded routing guide -> {out_p} ({len(out)} lines)")
 PYEOF
+    GUIDE_FOR_DRT="${GUIDE_EXP}"
+else
+    echo "=== [2/4] Routing Guide Ready (openroad_std multi-metal) ==="
+    GUIDE_FOR_DRT="${GUIDE_RAW}"
+fi
 
 echo "=== [3/4] OpenROAD Detailed Route ==="
 cat > output/work/run_drt.tcl <<EOF
 read_lef "${REPO_ROOT}/${PDK_TECH_LEF}"
 read_lef "${REPO_ROOT}/${PDK_DRT_CELLS_LEF}"
 read_def "${REPO_ROOT}/${PLACED_DEF}"
-read_guides "${REPO_ROOT}/${GUIDE_EXP}"
+read_guides "${REPO_ROOT}/${GUIDE_FOR_DRT}"
 set_routing_layers -signal ${PDK_METAL_LAYERS}
 detailed_route -output_drc "${REPO_ROOT}/${ROUTE_DRC}" -droute_end_iter 40 -verbose 1
 write_def "${REPO_ROOT}/${ROUTED_DEF}"
@@ -69,6 +75,10 @@ case "${PDK_FLOW_DRIVER}" in
     tr1um_2m)
         "${KLAYOUT_BIN}" -b -r scripts/tr1um_def2gds.py 2>&1 | tee output/logs/def2gds.log
         python3 scripts/tr1um_v2spice.py 2>&1 | tee output/logs/v2spice.log
+        ;;
+    openroad_std)
+        "${KLAYOUT_BIN}" -b -r scripts/openroad_def2gds.py 2>&1 | tee output/logs/def2gds.log
+        python3 scripts/openroad_v2spice.py 2>&1 | tee output/logs/v2spice.log
         ;;
     *)
         echo "ERROR: Unsupported flow_driver '${PDK_FLOW_DRIVER}'." >&2

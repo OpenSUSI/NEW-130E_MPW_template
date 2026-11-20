@@ -9,6 +9,7 @@ __pycache__/
 # Generated EDA outputs (GCP / CI controlled)
 output/work/
 output/package/
+output/pdk_cache/
 output/gds/*
 !output/gds/.gitkeep
 output/reports/*
@@ -16,9 +17,8 @@ output/reports/*
 output/logs/*
 !output/logs/.gitkeep
 
-# Local proposal / confidential reference decks
-reference/*.pptx
-reference/*.pdf
+# Local project proposals (excluded from template repository)
+proposals/
 
 # Simulation waveforms & temporary files
 *.vcd

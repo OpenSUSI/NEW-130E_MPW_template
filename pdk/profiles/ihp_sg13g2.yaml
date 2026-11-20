@@ -1,0 +1,102 @@
+# ==============================================================================
+# IHP Open PDK (SG13G2 130 nm SiGe BiCMOS) Adapter Profile — Option B (Submodule)
+# Upstream: https://github.com/IHP-GmbH/IHP-Open-PDK
+# Mount as single target PDK:
+#   git submodule add -b main https://github.com/IHP-GmbH/IHP-Open-PDK.git pdk/ihp_sg13g2
+# ==============================================================================
+
+name: "ihp_sg13g2"
+display_name: "IHP SG13G2 (130 nm SiGe BiCMOS, 5M+2TM, 1.2 V)"
+status: "active"
+flow_driver: "openroad_std"
+
+upstream:
+  repo: "https://github.com/IHP-GmbH/IHP-Open-PDK.git"
+  ref: "main"
+  dir: "ihp-sg13g2"
+
+technology:
+  node_nm: 130
+  vdd_v: 1.2
+  dbu_um: 0.001
+  dbu_per_micron: 1000
+  metal_layers: "Metal1-Metal5"
+  clock_metal_layers: "Metal3-Metal5"
+  top_cell_prefix: "sg13g2_"
+
+geometry:
+  die_origin: "zero"
+  die_width_um: 200.0
+  die_height_um: 200.0
+  core_margin_um: 10.0
+  core_width_um: 180.0
+  core_height_um: 180.0
+  core_offset_x_um: 10.0
+  core_offset_y_um: 10.0
+  site_name: "CoreSite"
+  site_width_um: 0.48
+  row_height_um: 3.78
+  num_rows: 0
+  row_origin_y_um: 0.0
+  row_pitch_um: 3.78
+  frame_cells: []
+
+synthesis:
+  dont_use_cells:
+    - "sg13g2_lgcp_1"
+    - "sg13g2_slgcp_1"
+    - "sg13g2_sighold"
+  buffer_cell: "sg13g2_buf_2"
+  buffer_in_pin: "A"
+  buffer_out_pin: "X"
+  tie_cells_supported: true
+  tie_hi_cell: "sg13g2_tiehi"
+  tie_hi_pin: "L_HI"
+  tie_lo_cell: "sg13g2_tielo"
+  tie_lo_pin: "L_LO"
+
+placement:
+  place_density: 0.60
+  pin_hor_layer: "Metal2"
+  pin_ver_layer: "Metal3"
+  tap_cell: ""
+  tap_distance_um: 0
+  endcap_cell: ""
+  filler_cells:
+    - "sg13g2_fill_8"
+    - "sg13g2_fill_4"
+    - "sg13g2_fill_2"
+    - "sg13g2_fill_1"
+
+views:
+  liberty: "pdk/ihp_sg13g2/ihp-sg13g2/libs.ref/sg13g2_stdcell/lib/sg13g2_stdcell_typ_1p20V_25C.lib"
+  tech_lef: "pdk/ihp_sg13g2/ihp-sg13g2/libs.ref/sg13g2_stdcell/lef/sg13g2_tech.lef"
+  grt_cells_lef: "pdk/ihp_sg13g2/ihp-sg13g2/libs.ref/sg13g2_stdcell/lef/sg13g2_stdcell.lef"
+  drt_cells_lef: "pdk/ihp_sg13g2/ihp-sg13g2/libs.ref/sg13g2_stdcell/lef/sg13g2_stdcell.lef"
+  stdcell_gds: "pdk/ihp_sg13g2/ihp-sg13g2/libs.ref/sg13g2_stdcell/gds/sg13g2_stdcell.gds"
+  stdcell_spice: "pdk/ihp_sg13g2/ihp-sg13g2/libs.ref/sg13g2_stdcell/cdl/sg13g2_stdcell.cdl"
+  primitives_v: "pdk/ihp_sg13g2/ihp-sg13g2/libs.ref/sg13g2_stdcell/verilog/sg13g2_stdcell.v"
+  verilog_models:
+    - "pdk/ihp_sg13g2/ihp-sg13g2/libs.ref/sg13g2_stdcell/verilog/sg13g2_stdcell.v"
+  dffe_map: ""
+  abc_constr: ""
+  frame_gds: ""
+  klayout_map: "pdk/ihp_sg13g2/ihp-sg13g2/libs.tech/klayout/tech/sg13g2.map"
+  klayout_lyp: "pdk/ihp_sg13g2/ihp-sg13g2/libs.tech/klayout/tech/sg13g2.lyp"
+
+signoff:
+  drc_mode: "ihp"
+  lvs_mode: "ihp"
+  drc_deck: "pdk/ihp_sg13g2/ihp-sg13g2/libs.tech/klayout/tech/drc/sg13g2_maximal.lydrc"
+  lvs_deck: "pdk/ihp_sg13g2/ihp-sg13g2/libs.tech/klayout/tech/lvs/sg13g2.lvs"
+  mdp_deck: ""
+  ip62_deck: ""
+
+padframe:
+  frame_cell: ""
+  wrapper_cell: ""
+  total_pads: 0
+  signal_pads: []
+  power_pads:
+    vdd: "VDD"
+    vss: "VSS"

@@ -96,15 +96,27 @@ def main() -> None:
     route_metrics = parse_detailed_route_metrics(logs / "detailed_route.log")
     route_ok = (ROOT / "output/gds" / f"{top_cell}.gds").is_file() and route_metrics["openroad_drc"] == 0
 
-    precheck_ok = (logs / "precheck.log").is_file() and "PRECHECK PASS" in (logs / "precheck.log").read_text(errors="replace")
-    drc_err = count_lyrdb_violations(rpts / "drc.lyrdb")
-    drc_ok = drc_err == 0
+    d_sig = design.get("signoff", {})
+    p_sig = pdk.get("signoff", {})
 
+    precheck_enabled = bool(d_sig.get("precheck", True))
+    precheck_ok = (not precheck_enabled) or (
+        (logs / "precheck.log").is_file() and "PRECHECK PASS" in (logs / "precheck.log").read_text(errors="replace")
+    )
+
+    drc_enabled = bool(d_sig.get("drc", True)) and bool(p_sig.get("drc_deck"))
+    drc_err = count_lyrdb_violations(rpts / "drc.lyrdb") if drc_enabled else 0
+    drc_ok = (drc_err == 0) if drc_enabled else True
+
+    lvs_enabled = bool(d_sig.get("lvs", {}).get("enabled", True)) and bool(p_sig.get("lvs_deck"))
     lvs_text = (logs / "lvs.log").read_text(errors="replace") if (logs / "lvs.log").is_file() else ""
-    lvs_match = ("Netlists match" in lvs_text or "Congratulations! Netlists match." in lvs_text) and "ERROR : Netlists don't match" not in lvs_text
+    lvs_match = (
+        ("Netlists match" in lvs_text or "Congratulations! Netlists match." in lvs_text)
+        and "ERROR : Netlists don't match" not in lvs_text
+    ) if lvs_enabled else True
 
-    ip62_err = count_lyrdb_violations(rpts / "ip62_drc.lyrdb")
-    mdp_enabled = bool(design.get("signoff", {}).get("mdp", {}).get("enabled", True))
+    mdp_enabled = bool(d_sig.get("mdp", {}).get("enabled", True)) and bool(p_sig.get("mdp_deck"))
+    ip62_err = count_lyrdb_violations(rpts / "ip62_drc.lyrdb") if mdp_enabled else 0
     mdp_ok = (ip62_err == 0) if mdp_enabled else True
 
     sta_metrics = parse_sta_metrics(rpts / "sta.rpt", clk_period)
