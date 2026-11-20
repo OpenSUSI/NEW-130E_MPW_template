@@ -1,5 +1,7 @@
 # OpenSUSI × Google AI-Assisted Chip Design Platform — MPW Design Template (`NEW-130E_MPW_template`)
 
+> Language: **English** | [日本語 (README-JP.md)](README-JP.md)
+
 Standardized **GitHub-to-Silicon** design repository template for the OpenSUSI × Google AI-Assisted Chip Design Platform.
 
 - **Target Production PDK**: **NEW-130E** (new 130 nm CMOS foundry PDK — adapter profile in [`pdk/profiles/new130e.yaml`](pdk/profiles/new130e.yaml), guide in [`pdk/profiles/new130e.md`](pdk/profiles/new130e.md))
@@ -16,7 +18,8 @@ Standardized directory layout for the OpenSUSI × Google AI-Assisted Chip Design
 
 ```text
 NEW-130E_MPW_template/
-├── README.md
+├── README.md                 # English documentation
+├── README-JP.md              # Japanese documentation (日本語版)
 ├── AGENTS.md                 # AI Agent common contract (Prefix / Fixed)
 ├── GEMINI.md                 # Gemini / Vertex AI specific instructions (Prefix / Fixed)
 ├── design.yaml               # Unified project / PDK / target / CI config (Prefix schema)
@@ -46,7 +49,10 @@ NEW-130E_MPW_template/
 │   ├── pre_check.py          # KLayout MPW GDSII Precheck (top cell, DBU, bbox, frame)
 │   ├── tr1um_place.py        # Generic TR-1um TAP2-row placer & FILL3/FILL2 decap filler
 │   ├── tr1um_def2gds.py      # Generic TR-1um DEF -> full-chip GDSII & OSS_FRAME router
-│   └── tr1um_v2spice.py      # Generic TR-1um Verilog + DEF -> LVS SPICE (.cir) builder
+│   ├── tr1um_v2spice.py      # Generic TR-1um Verilog + DEF -> LVS SPICE (.cir) builder
+│   ├── openroad_def2gds.py   # Generic openroad_std DEF -> GDSII converter (IHP-130/SKY130/NEW-130E)
+│   ├── openroad_v2spice.py   # Generic openroad_std Verilog -> LVS SPICE (.cir) builder
+│   └── prepare_sky130.py     # Helper to build merged SKY130 views from google/skywater-pdk submodule
 ├── .github/
 │   ├── actions/              # Reusable composite actions (checkout-pdk, setup-klayout)
 │   └── workflows/
@@ -104,3 +110,32 @@ python3 scripts/package.py
 - `output/gds/<mdp_file>` — MDP / IP62 mask-ready GDSII
 - `output/reports/summary.json` — Unified PPA & sign-off telemetry for CI and Gemini
 - `output/package/<top_cell>_mpw_bundle.tar.gz` — Submission bundle + `manifest.json`
+
+---
+
+## 3. Designer Workflow & Prompting Gemini
+
+### 3.1 Clone & Prepare Your Design Repository
+
+1. **Clone with Submodule**:
+   ```bash
+   git clone --recurse-submodules <YOUR_REPO_URL>
+   ```
+   *(To switch the target PDK from default `tr1um` to `ihp_sg13g2`, `sky130`, or `new130e`, follow [`pdk/README.md`](pdk/README.md) — select **one** target PDK per repository.)*
+2. **Edit Designer Inputs**:
+   - [`design.yaml`](design.yaml): Update `project` metadata (`name`, `github_user`), `design.top_cell`, active `pdk`, and PPA `targets` (keep all schema keys intact).
+   - [`docs/design-spec.md`](docs/design-spec.md): Write your target functional specification, I/O pinout, and acceptance criteria.
+   - [`reference/`](reference/README.md): *(Optional)* Place reference papers, datasheets, block diagrams, protocol specs, or golden test vectors.
+
+### 3.2 Prompting Gemini / Antigravity (Pattern A / B / C)
+
+Because Gemini / Antigravity automatically loads [`AGENTS.md`](AGENTS.md) and [`GEMINI.md`](GEMINI.md), you do **not** need to repeat EDA pipeline steps, DRC/LVS rules, or governance constraints in your prompt.
+
+- **Pattern A — Implement & Sign Off from `docs/design-spec.md` (Standard)**:
+  > Using `docs/design-spec.md` and the materials in `reference/`, implement `rtl/top.v`, `constraints/pin_order.cfg`, `constraints/timing.sdc`, and `verification/testbench/tb_top.v` for the active PDK, then run `flow/run_all.sh` and iterate until all sign-off gates (RTL/GL Sim, P&R, Precheck, DRC, LVS, STA) PASS.
+
+- **Pattern B — Co-Design the Specification with Gemini First**:
+  > Review the materials placed in `reference/` and draft a chip specification in `docs/design-spec.md` that fits within the active PDK's physical limits (pin count and cell budget). Wait for my approval before implementing the RTL and running sign-off.
+
+- **Pattern C — Iterative PPA Optimization & Debugging**:
+  > Inspect `output/reports/summary.json`, pipeline the critical path to improve estimated Fmax above 20 MHz (or reduce cell count below target), and verify that all sign-off gates PASS again.

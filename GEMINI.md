@@ -15,6 +15,7 @@ Your goal is to translate the designer's specification (`docs/design-spec.md`) i
    - `design.yaml` — Active PDK (`pdk.name`), top module, top cell name, clock period, utilization & cell budget.
    - `pdk/profiles/<pdk.name>.yaml` (referenced by `design.yaml` `pdk.profile`) — Physical die/core limits, metal stack, available standard cells, pad count.
    - `docs/design-spec.md` — Functional specification, protocol, pinout, and acceptance criteria.
+   - `reference/` — Any designer-supplied reference materials (papers, datasheets, architecture memos, protocol specs, test vectors).
    - `constraints/pin_order.cfg` and `constraints/timing.sdc` — I/O pad assignments and timing targets.
 
 2. **Allowed Modification Scope**:
@@ -33,7 +34,7 @@ Execute the following closed-loop workflow until all sign-off checks pass and PP
 
 ```text
 [1. Spec Analysis]
-    Read docs/design-spec.md + design.yaml + pdk/profiles/<active>.yaml
+    Read docs/design-spec.md + reference/ + design.yaml + pdk/profiles/<active>.yaml
         ↓
 [2. Generate / Refine RTL, Constraints & Self-Checking Testbench]
     Edit rtl/top.v, constraints/timing.sdc, constraints/pin_order.cfg,

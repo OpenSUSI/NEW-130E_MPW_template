@@ -17,6 +17,7 @@ Per OpenSUSI MPW submission rules, certain paths are **Prefix (Fixed / Platform-
 | `flow/`, `scripts/`, `pdk/` | **Platform-Managed** | Do NOT alter sign-off rules or bypass DRC/LVS/Precheck |
 | `output/` | **GCP / CI Controlled** | Never hand-edit outputs; generated only by `flow/*.sh` |
 | `docs/design-spec.md` | **Designer Workspace** | Source of truth for functional & PPA requirements |
+| `reference/` | **Designer Workspace** | Designer reference materials (datasheets, specs, papers, diagrams) read by designers & AI |
 | `rtl/` | **Designer / AI Workspace** | Edit synthesizable Verilog / SystemVerilog here |
 | `constraints/` | **Designer / AI Workspace** | Edit `timing.sdc` and `pin_order.cfg` within PDK limits |
 | `verification/testbench/` | **Designer / AI Workspace** | Add/update self-checking testbenches here |

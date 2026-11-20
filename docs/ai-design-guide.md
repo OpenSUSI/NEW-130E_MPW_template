@@ -7,9 +7,9 @@ This guide explains how designers collaborate with **Gemini / Vertex AI** (or co
 ## 1. Platform Workflow
 
 1. **Clone the Template**: Create a new repository from `NEW-130E_MPW_template`.
-2. **Author Your Specification**: Describe your chip's architecture, I/O pinout, and PPA goals in [`docs/design-spec.md`](design-spec.md) and update project metadata in [`design.yaml`](../design.yaml).
+2. **Author Your Specification & Reference Materials**: Describe your chip's architecture, I/O pinout, and PPA goals in [`docs/design-spec.md`](design-spec.md), place any supporting datasheets/papers/diagrams in [`reference/`](../reference/README.md), and update project metadata in [`design.yaml`](../design.yaml).
 3. **Collaborate with Gemini**:
-   - Gemini reads `GEMINI.md`, `AGENTS.md`, `design.yaml`, `pdk/profiles/<active>.yaml`, and `docs/design-spec.md`.
+   - Gemini reads `GEMINI.md`, `AGENTS.md`, `design.yaml`, `pdk/profiles/<active>.yaml`, `docs/design-spec.md`, and `reference/`.
    - Gemini generates/refines `rtl/top.v`, `constraints/timing.sdc`, `constraints/pin_order.cfg`, and `verification/testbench/tb_top.v`.
 4. **Run EDA Pipeline (Locally or on GCP via GitHub Actions)**:
    ```bash
