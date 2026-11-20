@@ -1,0 +1,31 @@
+name: Checkout PDK
+description: Sparse checkout of external OpenSUSI PDK ruleset directory
+
+inputs:
+  pdk_repo:
+    description: Git repository URL of the PDK
+    required: true
+  pdk_ref:
+    description: Branch, tag, or commit ref
+    required: true
+  pdk_dir:
+    description: Subdirectory inside the PDK repo to sparse checkout
+    required: true
+  checkout_dir:
+    description: Local checkout directory
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Sparse checkout PDK
+      shell: bash
+      run: |
+        set -euo pipefail
+        rm -rf "${{ inputs.checkout_dir }}"
+        git clone --filter=blob:none --sparse --branch "${{ inputs.pdk_ref }}" "${{ inputs.pdk_repo }}" "${{ inputs.checkout_dir }}"
+        (
+          cd "${{ inputs.checkout_dir }}"
+          git sparse-checkout add "${{ inputs.pdk_dir }}"
+        )
+        ls -la "${{ inputs.checkout_dir }}"

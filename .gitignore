@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# OS
+.DS_Store
+
+# Generated EDA outputs (GCP / CI controlled)
+output/work/
+output/package/
+output/gds/*
+!output/gds/.gitkeep
+output/reports/*
+!output/reports/.gitkeep
+output/logs/*
+!output/logs/.gitkeep
+
+# Local proposal / confidential reference decks
+reference/*.pptx
+reference/*.pdf
+
+# Simulation waveforms & temporary files
+*.vcd
+*.vvp
+*.log

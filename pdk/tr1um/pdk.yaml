@@ -1,0 +1,98 @@
+# ==============================================================================
+# OpenSUSI TR-1um PDK Profile (PoC Backend for AI-Assisted Chip Design Platform)
+# Reference: OpenSUSI TR-1um 1.0 um CMOS, 2-Metal (M1/M2), 5.0 V
+# ==============================================================================
+
+name: "tr1um"
+display_name: "OpenSUSI TR-1um (1.0 um CMOS, 2M, 5.0 V)"
+status: "active_poc"
+flow_driver: "tr1um_2m"
+
+upstream:
+  repo: "https://github.com/OpenSUSI/TR-1um.git"
+  ref: "dev"
+  dir: "libs.tech"
+
+technology:
+  node_nm: 1000
+  vdd_v: 5.0
+  dbu_um: 0.001
+  dbu_per_micron: 1000
+  metal_layers: "METAL1-METAL2"
+  top_cell_prefix: "tr_1um_"
+
+geometry:
+  die_width_um: 2500.0
+  die_height_um: 2500.0
+  core_width_um: 1840.0
+  core_height_um: 1840.0
+  core_offset_x_um: -920.0
+  core_offset_y_um: -920.0
+  site_name: "TR1UM"
+  site_width_um: 5.4
+  row_height_um: 59.4
+  num_rows: 11
+  row_origin_y_um: 27.0
+  row_pitch_um: 145.8
+  frame_cells:
+    - "OSS_FRAME"
+    - "OSS_FRAME_GIO"
+    - "OSS_FRAME_TEG"
+
+synthesis:
+  dont_use_cells:
+    - "BUFTH"
+    - "DEL1"
+    - "OSS_ESD_5V_DIO"
+    - "REG8x16"
+    - "RSLATCH"
+  buffer_cell: "BUF_X2"
+  buffer_in_pin: "A"
+  buffer_out_pin: "Y"
+  tie_cells_supported: false
+
+views:
+  liberty: "pdk/tr1um/stdcell/tr1um_typ_5v0_25c.lib"
+  cell_info_json: "pdk/tr1um/stdcell/cell_info.json"
+  stdcell_gds: "pdk/tr1um/stdcell/TR-1um_STDCELL.gds"
+  stdcell_spice_dir: "pdk/tr1um/stdcell/simulation"
+  pad_spice: "pdk/tr1um/spice/oss_esd_pads.spice"
+  tech_lef: "pdk/tr1um/openroad/TR-1um_tech_clean.lef"
+  grt_cells_lef: "pdk/tr1um/openroad/TR-1um_cells_grt_m1.lef"
+  drt_cells_lef: "pdk/tr1um/openroad/TR-1um_cells_m2only.lef"
+  dffe_map: "pdk/tr1um/openroad/dffe_map.v"
+  primitives_v: "pdk/tr1um/openroad/primitives.v"
+  abc_constr: "pdk/tr1um/openroad/abc.constr"
+  frame_gds: "pdk/tr1um/klayout/libraries/TR-1um_frame_25x25.gds"
+
+signoff:
+  drc_deck: "pdk/tr1um/klayout/tech/drc/run.drc"
+  lvs_deck: "pdk/tr1um/klayout/tech/lvs/run.lvs"
+  mdp_deck: "pdk/tr1um/klayout/tech/drc/run_mdp.drc"
+  ip62_deck: "pdk/tr1um/klayout/tech/drc/run_IP62.drc"
+
+padframe:
+  frame_cell: "OSS_FRAME_GIO"
+  wrapper_cell: "OSS_FRAME"
+  dio_cell: "OSS_ESD_5V_DIO"
+  vdd_cell: "OSS_ESD_5V_VDD"
+  vss_cell: "OSS_ESD_5V_VSS"
+  total_pads: 16
+  signal_pads:
+    - "P1"
+    - "P2"
+    - "P3"
+    - "P4"
+    - "P5"
+    - "P6"
+    - "P7"
+    - "P9"
+    - "P10"
+    - "P11"
+    - "P12"
+    - "P13"
+    - "P14"
+    - "P15"
+  power_pads:
+    vdd: "P16"
+    vss: "P8"

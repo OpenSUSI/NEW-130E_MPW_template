@@ -1,0 +1,39 @@
+name: Setup KLayout
+description: Install pinned KLayout (.deb with cache) for reproducible DRC/LVS/MDP sign-off
+
+inputs:
+  klayout_version:
+    description: KLayout version to install
+    required: false
+    default: "0.30.9"
+
+runs:
+  using: composite
+  steps:
+    - name: Restore KLayout .deb cache
+      id: deb-cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/klayout-deb
+        key: klayout-deb-${{ inputs.klayout_version }}-${{ runner.os }}-ubuntu-24.04
+
+    - name: Download KLayout .deb
+      if: steps.deb-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        VERSION="${{ inputs.klayout_version }}"
+        DEB="klayout_${VERSION}-1_amd64.deb"
+        mkdir -p ~/.cache/klayout-deb
+        wget -q "https://www.klayout.org/downloads/Ubuntu-24/${DEB}" -O ~/.cache/klayout-deb/"${DEB}"
+
+    - name: Install KLayout .deb
+      shell: bash
+      run: |
+        set -euo pipefail
+        DEB="$HOME/.cache/klayout-deb/klayout_${{ inputs.klayout_version }}-1_amd64.deb"
+        if ! sudo apt-get install -y --no-install-recommends "${DEB}"; then
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends "${DEB}"
+        fi
+        klayout -v

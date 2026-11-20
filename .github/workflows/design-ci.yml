@@ -1,0 +1,222 @@
+# ==============================================================================
+# OpenSUSI x Google AI-Assisted Chip Design Platform — Standardized Design CI
+# Policy: PREFIX (Fixed by OpenSUSI; do not modify in designer repositories)
+# ==============================================================================
+name: design-ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      execution_backend:
+        description: "EDA execution backend (github-runner | gcp-batch)"
+        required: false
+        default: "github-runner"
+        type: choice
+        options:
+          - github-runner
+          - gcp-batch
+
+concurrency:
+  group: design-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  KLAYOUT_VERSION: "0.30.9"
+  OPENSUSI_EDA_CONTAINER: "asia-northeast1-docker.pkg.dev/opensusi-eda-platform/eda/opensusi-eda:v0.1.0"
+
+jobs:
+  # ----------------------------------------------------------------------------
+  # 1. Template Governance & Schema Validation (Always runs on every push/PR)
+  # ----------------------------------------------------------------------------
+  validate:
+    runs-on: ubuntu-24.04
+    outputs:
+      top_module: ${{ steps.cfg.outputs.top_module }}
+      top_cell: ${{ steps.cfg.outputs.top_cell }}
+      pdk_name: ${{ steps.cfg.outputs.pdk_name }}
+      mdp_file: ${{ steps.cfg.outputs.mdp_file }}
+      gcp_enabled: ${{ steps.cfg.outputs.gcp_enabled }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate template policy, design.yaml schema, and pin mapping
+        run: |
+          python3 scripts/validate.py --stage pre
+
+      - name: Export design metadata
+        id: cfg
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          from pathlib import Path
+          import sys
+          sys.path.insert(0, "scripts")
+          from config_loader import load_design_and_pdk
+          design, pdk = load_design_and_pdk(Path("."))
+          print(f"top_module={design['design']['top_module']}")
+          print(f"top_cell={design['design']['top_cell']}")
+          print(f"pdk_name={pdk['name']}")
+          print(f"mdp_file={design.get('signoff', {}).get('mdp', {}).get('file', '')}")
+          print(f"gcp_enabled={'true' if design.get('gcp', {}).get('enabled') else 'false'}")
+          PY
+
+  # ----------------------------------------------------------------------------
+  # 2. GCP Design Execution Platform Dispatch (Optional: active when WIF set)
+  # ----------------------------------------------------------------------------
+  gcp-eda-dispatch:
+    runs-on: ubuntu-24.04
+    needs: validate
+    if: >-
+      (inputs.execution_backend == 'gcp-batch' || needs.validate.outputs.gcp_enabled == 'true') &&
+      vars.GCP_WORKLOAD_IDENTITY_PROVIDER != ''
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Stage Snapshot to GCS & Submit GCP Cloud Batch Job
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ vars.GCP_REGION || 'asia-northeast1' }}
+          GCS_BUCKET: ${{ vars.GCS_ARTIFACT_BUCKET }}
+          BATCH_SA: ${{ vars.GCP_BATCH_SERVICE_ACCOUNT }}
+          GCS_PDK_URI: ${{ vars.GCS_PDK_URI }}
+          EDA_IMAGE: ${{ vars.OPENSUSI_EDA_CONTAINER || env.OPENSUSI_EDA_CONTAINER }}
+        run: |
+          set -euo pipefail
+          REPO_SLUG="$(echo "${GITHUB_REPOSITORY##*/}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')"
+          JOB_ID="eda-${REPO_SLUG:0:20}-${GITHUB_SHA::7}-${GITHUB_RUN_NUMBER}"
+          JOB_ID="$(echo "${JOB_ID}" | cut -c1-63 | sed 's/-$//')"
+          GCS_PREFIX="${GCS_BUCKET%/}/jobs/${REPO_SLUG}/${JOB_ID}"
+
+          tar -czf /tmp/repo.tar.gz --exclude='.git' --exclude='output/*' .
+          gcloud storage cp /tmp/repo.tar.gz "${GCS_PREFIX}/input/repo.tar.gz"
+
+          cat > /tmp/batch-job.json <<EOF
+          {
+            "taskGroups": [{
+              "taskSpec": {
+                "runnables": [{ "container": { "imageUri": "${EDA_IMAGE}" } }],
+                "computeResource": { "cpuMilli": 4000, "memoryMib": 14336, "bootDiskMib": 30720 },
+                "maxRetryCount": 1,
+                "maxRunDuration": "3600s",
+                "environment": {
+                  "variables": {
+                    "GCS_INPUT_URI": "${GCS_PREFIX}/input/repo.tar.gz",
+                    "GCS_OUTPUT_URI": "${GCS_PREFIX}/output",
+                    "GCS_PDK_URI": "${GCS_PDK_URI}",
+                    "FLOW_CMD": "bash flow/run_all.sh"
+                  }
+                }
+              },
+              "taskCount": 1,
+              "parallelism": 1
+            }],
+            "allocationPolicy": {
+              "instances": [{ "policy": { "machineType": "e2-standard-4", "provisioningModel": "SPOT" } }],
+              "serviceAccount": { "email": "${BATCH_SA}" }
+            },
+            "logsPolicy": { "destination": "CLOUD_LOGGING" }
+          }
+          EOF
+
+          gcloud batch jobs submit "${JOB_ID}" \
+            --project="${GCP_PROJECT_ID}" \
+            --location="${GCP_REGION}" \
+            --config=/tmp/batch-job.json
+
+          while true; do
+            STATE="$(gcloud batch jobs describe "${JOB_ID}" --project="${GCP_PROJECT_ID}" --location="${GCP_REGION}" --format='value(status.state)')"
+            echo "Cloud Batch ${JOB_ID}: state=${STATE}"
+            case "${STATE}" in
+              SUCCEEDED) break ;;
+              FAILED|DELETION_IN_PROGRESS)
+                gcloud storage cp "${GCS_PREFIX}/output/reports/summary.json" output/reports/summary.json 2>/dev/null || true
+                exit 1
+                ;;
+            esac
+            sleep 15
+          done
+
+          mkdir -p output/reports output/gds output/package
+          gcloud storage cp -r "${GCS_PREFIX}/output/*" output/ || true
+          cat output/reports/summary.json
+
+  # ----------------------------------------------------------------------------
+  # 3. EDA Execution & MPW Sign-Off (Container / Runner PoC Execution)
+  # ----------------------------------------------------------------------------
+  eda-signoff:
+    runs-on: ubuntu-24.04
+    needs: validate
+    if: inputs.execution_backend != 'gcp-batch'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Open-Source Simulation & Synthesis Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends iverilog yosys
+
+      - name: Setup KLayout (${{ env.KLAYOUT_VERSION }})
+        uses: ./.github/actions/setup-klayout
+        with:
+          klayout_version: ${{ env.KLAYOUT_VERSION }}
+
+      - name: Run Stage 1 (Validate + RTL Sim + Yosys Synthesis + Gate-Level Sim)
+        run: |
+          bash flow/synth.sh
+
+      - name: Run Stage 2 (Floorplan & Placement)
+        run: |
+          bash flow/floorplan.sh
+
+      - name: Run Stage 3 & 4 (OpenROAD P&R + GDS/LVS + Sign-Off) when OpenROAD is available
+        run: |
+          if command -v openroad >/dev/null 2>&1; then
+            bash flow/place_route.sh
+            bash flow/signoff.sh
+            python3 scripts/validate.py --stage post
+            python3 scripts/package.py
+          else
+            echo "::notice::OpenROAD binary not installed on stock ubuntu-24.04 runner; run inside OpenSUSI EDA container on GCP for full P&R and Sign-off."
+          fi
+
+      - name: Upload EDA Artifacts (GDSII, Reports, Logs, Submission Bundle)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mpw-artifacts-${{ needs.validate.outputs.top_cell }}
+          if-no-files-found: ignore
+          retention-days: 14
+          path: |
+            output/gds/
+            output/reports/
+            output/logs/
+            output/package/

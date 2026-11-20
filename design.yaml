@@ -1,0 +1,63 @@
+# ==============================================================================
+# OpenSUSI x Google AI-Assisted Chip Design Platform — Design Configuration
+# Policy: PREFIX (Schema fixed by OpenSUSI; designers edit values only)
+# ==============================================================================
+
+schema_version: 1
+
+project:
+  name: "poc_alu4"
+  title: "4-bit Registered ALU & Accumulator (TR-1um PoC)"
+  author: "OpenSUSI Template Maintainer"
+  github_user: "opensusi_poc"
+  description: "PoC digital core validating the OpenSUSI x Google GitHub-to-Silicon AI-Assisted Chip Design Platform on TR-1um before NEW-130E 130nm PDK drop-in."
+
+# Active PDK selection ("tr1um" for PoC, "new130e" for target 130nm MPW)
+pdk:
+  name: "tr1um"
+  profile: "pdk/tr1um/pdk.yaml"
+
+design:
+  top_module: "top"
+  # MPW submission top cell name: must start with the active PDK top_cell_prefix
+  # (e.g. "tr_1um_<github_user>" for TR-1um, "new130e_<github_user>" for NEW-130E)
+  top_cell: "tr_1um_opensusi_poc"
+  rtl_files:
+    - "rtl/top.v"
+  constraints:
+    sdc: "constraints/timing.sdc"
+    pin_order: "constraints/pin_order.cfg"
+
+# Physical & PPA targets (consumed by Gemini / AI agents and CI validation)
+targets:
+  clock_port: "clk"
+  clock_period_ns: 100.0
+  max_utilization_pct: 80.0
+  max_stdcells: 600
+  target_fmax_mhz: 10.0
+
+verification:
+  testbench: "verification/testbench/tb_top.v"
+  sim_timeout_sec: 60
+
+signoff:
+  precheck: true
+  drc: true
+  lvs:
+    enabled: true
+    netlist_only: false
+    strict_ports: true
+  mdp:
+    enabled: true
+    file: "IP62_opensusi_poc.gds"
+  sta:
+    enabled: true
+
+# GCP Design Execution & Vertex AI orchestration settings
+gcp:
+  enabled: false
+  project_id: "opensusi-eda-platform"
+  region: "asia-northeast1"
+  eda_container_image: "asia-northeast1-docker.pkg.dev/opensusi-eda-platform/eda/opensusi-eda:v0.1.0"
+  artifact_bucket: "gs://opensusi-mpw-artifacts"
+  vertex_ai_model: "gemini-2.5-pro"

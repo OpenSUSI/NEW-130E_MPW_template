@@ -1,0 +1,74 @@
+# ==============================================================================
+# NEW-130E 130 nm CMOS PDK Profile (Target Foundry Integration Contract)
+# Status: Scaffold — populate foundry views & sign-off decks when PDK drops in
+# ==============================================================================
+
+name: "new130e"
+display_name: "NEW-130E (130 nm CMOS, Target Foundry MPW)"
+status: "scaffold"
+flow_driver: "openroad_std"
+
+upstream:
+  repo: "TBD"
+  ref: "main"
+  dir: "libs.tech"
+
+technology:
+  node_nm: 130
+  vdd_v: 1.8
+  dbu_um: 0.001
+  dbu_per_micron: 1000
+  metal_layers: "MET1-MET5"
+  top_cell_prefix: "new130e_"
+
+geometry:
+  die_width_um: 2500.0
+  die_height_um: 2500.0
+  core_width_um: 1800.0
+  core_height_um: 1800.0
+  core_offset_x_um: -900.0
+  core_offset_y_um: -900.0
+  site_name: "TBD_SITE"
+  site_width_um: 0.46
+  row_height_um: 2.72
+  num_rows: 0
+  row_origin_y_um: 0.0
+  row_pitch_um: 2.72
+  frame_cells:
+    - "NEW130E_FRAME"
+
+synthesis:
+  dont_use_cells: []
+  buffer_cell: "TBD_BUF"
+  buffer_in_pin: "A"
+  buffer_out_pin: "Y"
+  tie_cells_supported: true
+
+views:
+  liberty: "pdk/new130e/libs.ref/stdcell/lib/new130e_tt_1p8v_25c.lib"
+  cell_info_json: "pdk/new130e/libs.ref/stdcell/cell_info.json"
+  stdcell_gds: "pdk/new130e/libs.ref/stdcell/gds/new130e_stdcell.gds"
+  stdcell_spice_dir: "pdk/new130e/libs.ref/stdcell/spice"
+  pad_spice: "pdk/new130e/libs.ref/io/spice/new130e_io.spice"
+  tech_lef: "pdk/new130e/libs.tech/openroad/new130e_tech.lef"
+  grt_cells_lef: "pdk/new130e/libs.ref/stdcell/lef/new130e_stdcell.lef"
+  drt_cells_lef: "pdk/new130e/libs.ref/stdcell/lef/new130e_stdcell.lef"
+  dffe_map: "pdk/new130e/libs.tech/yosys/dffe_map.v"
+  primitives_v: "pdk/new130e/libs.ref/stdcell/verilog/new130e_stdcell.v"
+  abc_constr: "pdk/new130e/libs.tech/yosys/abc.constr"
+  frame_gds: "pdk/new130e/libs.ref/io/gds/new130e_frame.gds"
+
+signoff:
+  drc_deck: "pdk/new130e/libs.tech/klayout/drc/run.drc"
+  lvs_deck: "pdk/new130e/libs.tech/klayout/lvs/run.lvs"
+  mdp_deck: ""
+  ip62_deck: ""
+
+padframe:
+  frame_cell: "NEW130E_FRAME"
+  wrapper_cell: "NEW130E_FRAME"
+  total_pads: 0
+  signal_pads: []
+  power_pads:
+    vdd: "VDD"
+    vss: "VSS"
