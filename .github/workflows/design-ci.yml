@@ -23,7 +23,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  KLAYOUT_VERSION: "0.30.9"
+  KLAYOUT_VERSION: "0.30.13"
   OPENSUSI_EDA_CONTAINER: "asia-northeast1-docker.pkg.dev/opensusi-eda-platform/eda/opensusi-eda:v0.1.0"
 
 jobs:

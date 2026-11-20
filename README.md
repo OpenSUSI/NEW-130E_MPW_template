@@ -80,7 +80,7 @@ NEW-130E_MPW_template/
 - `iverilog` / `vvp`
 - `yosys`
 - `openroad`
-- `klayout` (`0.30.9` recommended; auto-detected on Linux PATH and macOS `/Applications/klayout.app`)
+- `klayout` (`0.30.13` recommended; auto-detected on Linux PATH and macOS `/Applications/klayout.app`)
 
 ### Run Full Pipeline
 ```bash
